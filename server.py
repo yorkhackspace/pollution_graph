@@ -19,7 +19,7 @@ with open("input.csv", "rb") as infile:
     reader = csv.reader(infile)
     for rownum, row in enumerate(reader):
         if rownum == 2:
-            print "row 2, reader line num:", reader.line_num
+            print("row 2, reader line num:", reader.line_num)
             for colnum, col in enumerate(row):
                 if colnum > 1 and len(col) > 0:
                     site_names.append(col)
@@ -35,7 +35,7 @@ with open("input.csv", "rb") as infile:
             timestamp = "%s_%s" % (dat, tim)
             # Assume that we only want the NO figures, which are in the first
             # column for each site.
-            for sitename, col in site_columns.iteritems():
+            for sitename, col in site_columns.items():
                 value = row[col]
                 if len(value) > 0:
                     value = float(value)
@@ -47,12 +47,12 @@ with open("input.csv", "rb") as infile:
 
 # To test, let's check the data for some sample points
 
-print "Bootham 2 sep 09:00:", site_data["York Bootham"]["02/09/2015_09:00:00"]
-print "Nunnery 5 sep 13:00:", site_data["York Nunnery Lane"]["05/09/2015_13:00:00"]
+print("Bootham 2 sep 09:00:", site_data["York Bootham"]["02/09/2015_09:00:00"])
+print("Nunnery 5 sep 13:00:", site_data["York Nunnery Lane"]["05/09/2015_13:00:00"])
 
 # current max value
 
-print "Holgate 8 sep 11:00:", site_data["York Holgate"]["08/09/2015_11:00:00"]
+print("Holgate 8 sep 11:00:", site_data["York Holgate"]["08/09/2015_11:00:00"])
 
 # And now, start a server to provide this data.  We'll normalise against the
 
@@ -71,15 +71,15 @@ while 1:
             site = int(components[0])
             day = int(components[1])
             hour = int(components[2])
-            print "Parsed: site:%s,day:%d,hour:%d" % (site, day, hour)
+            print("Parsed: site:%s,day:%d,hour:%d" % (site, day, hour))
             site_name = site_names[site]
             timestamp = "%02d/09/2015_%02d:00:00" % (day, hour)
             data = site_data[site_name][timestamp]
-            print "data: %r" % data
+            print("data: %r" % data)
             percent = int((data / max_val) * 100)
-            print "normalised against %.3f = %d" % (max_val, percent)
+            print("normalised against %.3f = %d" % (max_val, percent))
             ser.write('! %03d\x0a' % percent)
 #            print('! %03d\x0a' % percent)
-        except Exception,e:
-            print "Exception:%r - ignored.", e
+        except Exception as e:
+            print("Exception:%r - ignored.", e)
 
