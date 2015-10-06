@@ -80,16 +80,16 @@ def extract_data(row, field_to_locations, headers):
             next_item = next(row_iter)
         except StopIteration:
             break
-        this_field = headers[this_location][inner_count],
+        this_field = headers[this_location][inner_count]
         inner_count += 1
         if len(item) == 0 or len(next_item) == 0:
             value = 0
             status = ""
             units = ""
         else:
-            value = item,
-            status = next_item[0],
-            units = next_item[2:],
+            value = float(item)
+            status = next_item[0]
+            units = next_item[2:]
 
         row_data[this_location][this_field] = {
             "value": value,
