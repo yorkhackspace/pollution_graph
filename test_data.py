@@ -53,10 +53,51 @@ def parse_headers(row, field_to_locations):
         else:
             if len(item) > 0:
                 if this_location not in row_headers:
-                    row_headers[this_location] = {}
-                row_headers[this_location][item] = next(row_iter)
+                    row_headers[this_location] = []
+                row_headers[this_location].append(item)
+                next(row_iter)
     print row_headers
     return row_headers
+
+
+def extract_data(row, field_to_locations, headers):
+    row_data = {}
+    rowdate = parse_date(row[0], row[1])
+    this_location = ''
+    row_iter = iter(row)
+    next(row_iter)  # date
+    next(row_iter)  # time
+    count = 2
+    inner_count = 0
+    for item in row_iter:
+        count += 1
+        if count in field_to_locations:
+            inner_count = 0
+            this_location = field_to_locations[count]
+            if this_location not in row_data:
+                row_data[this_location] = {"date": rowdate}
+        try:
+            next_item = next(row_iter)
+        except StopIteration:
+            break
+        this_field = headers[this_location][inner_count],
+        inner_count += 1
+        if len(item) == 0 or len(next_item) == 0:
+            value = 0
+            status = ""
+            units = ""
+        else:
+            value = item,
+            status = next_item[0],
+            units = next_item[2:],
+
+        row_data[this_location][this_field] = {
+            "value": value,
+            "status": status,
+            "units": units,
+        }
+    return row_data
+
 
 with open('input.csv') as f:
     reader = csv.reader(f)
@@ -73,6 +114,7 @@ with open('input.csv') as f:
             continue
         if len(row) > 2:
             print(row)
-            rowdate = parse_date(row[0], row[1])
             # Here be the clever bit. We should be able to
             # extract things we want now.
+            data = extract_data(row, field_to_locations, headers)
+            print(data)
