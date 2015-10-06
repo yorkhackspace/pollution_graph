@@ -64,6 +64,68 @@ void setup() {
   inbuf_pos = 0;
 }
 
+/* Helper functions */
+
+// Create a 24 bit color value from R,G,B
+uint32_t Color(byte r, byte g, byte b)
+{
+  uint32_t c;
+  c = r;
+  c <<= 8;
+  c |= g;
+  c <<= 8;
+  c |= b;
+  return c;
+}
+
+// What we will really want is:
+// Code that samples the input devices:
+//   - any reed switches for the map
+//   - sliders / rotaryencs / POTs for the date / time
+// And then code that sends a request over serial to the RPi to get the appropriate data point
+// When the response comes back, plot it as a series of LEDs.
+// How to demo that without the strip?  Guess we just debug with the test app and plug and pray.
+void showMeterPercent(byte percentage)
+{
+  // Convert the input percentage into a number of LEDs to light.
+  int num_leds = percentage / strip.numPixels();
+  // Now scale that to a colour.   We want:
+  // 0 = Green.     00 FF 00
+  // 30% = Yellow   FF FF 00
+  // 60% = Orange   FF 80 00
+  // 100% = Red     FF 00 00
+  byte r, g, b;
+  b = 0;
+ 
+  if (percentage < 30)
+  {
+    r = map(percentage, 0, 30, 0, 255);
+    g = 255;
+  }
+  else
+  {
+    r = 255;
+    g = map(percentage, 30, 100, 255, 0);
+  }
+  int32_t col = Color(r, g, b);
+  for (byte ii = 0; ii < strip.numPixels(); ii++)
+  {
+    if (ii <= num_leds)
+    {
+      strip.setPixelColor(ii, col);
+    }
+    else
+    {
+      strip.setPixelColor(ii, 0);
+    }
+  }
+  strip.show();
+  // debug : set pwm RGB LED.  R = 6, G = 10, B = 11
+  analogWrite(6, r);
+  analogWrite(10, g);
+  analogWrite(11, b);
+}
+
 void loop()
 {
   // Ramp the meter from 0 to 100%
@@ -134,64 +196,3 @@ void loop()
   }
 }
 
-/* Helper functions */
-
-// Create a 24 bit color value from R,G,B
-uint32_t Color(byte r, byte g, byte b)
-{
-  uint32_t c;
-  c = r;
-  c <<= 8;
-  c |= g;
-  c <<= 8;
-  c |= b;
-  return c;
-}
-
-// What we will really want is:
-// Code that samples the input devices:
-//   - any reed switches for the map
-//   - sliders / rotaryencs / POTs for the date / time
-// And then code that sends a request over serial to the RPi to get the appropriate data point
-// When the response comes back, plot it as a series of LEDs.
-// How to demo that without the strip?  Guess we just debug with the test app and plug and pray.
-void showMeterPercent(byte percentage)
-{
-  // Convert the input percentage into a number of LEDs to light.
-  int num_leds = percentage / strip.numPixels();
-  // Now scale that to a colour.   We want:
-  // 0 = Green.     00 FF 00
-  // 30% = Yellow   FF FF 00
-  // 60% = Orange   FF 80 00
-  // 100% = Red     FF 00 00
-  byte r, g, b;
-  b = 0;
- 
-  if (percentage < 30)
-  {
-    r = map(percentage, 0, 30, 0, 255);
-    g = 255;
-  }
-  else
-  {
-    r = 255;
-    g = map(percentage, 30, 100, 255, 0);
-  }
-  int32_t col = Color(r, g, b);
-  for (byte ii = 0; ii < strip.numPixels(); ii++)
-  {
-    if (ii <= num_leds)
-    {
-      strip.setPixelColor(ii, col);
-    }
-    else
-    {
-      strip.setPixelColor(ii, 0);
-    }
-  }
-  strip.show();
-  // debug : set pwm RGB LED.  R = 6, G = 10, B = 11
-  analogWrite(6, r);
-  analogWrite(10, g);
-  analogWrite(11, b);
-}
