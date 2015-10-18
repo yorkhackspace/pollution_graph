@@ -131,13 +131,13 @@ def extract_csv_to_list(csvfilename):
             line += 1
             if line < 3:
                 continue
-            if line == 3:
+            elif line == 3:
                 field_to_locations = parse_locations(row)
                 continue
-            if line == 4:
+            elif line == 4:
                 headers = parse_headers(row, field_to_locations)
                 continue
-            if len(row) > 2:
+            elif len(row) > 2:
                 debug(row)
                 row_data = extract_row_data(row, field_to_locations, headers)
                 # I don't think this is very clever or efficient
