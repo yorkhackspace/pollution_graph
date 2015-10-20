@@ -176,9 +176,10 @@ void loop()
     if ((!encoder_A) && (encoder_A_prev)) {
       if (encoder_B) {
         // clockwise
+        Serial.write("clockwise\n\r");
       } else {
         // anticlockwise
-        // XXX Update something here.
+        Serial.write("anti-clockwise\n\r");
       }
     }
     encoder_A_prev = encoder_A;
