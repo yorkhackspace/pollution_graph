@@ -29,6 +29,16 @@ Example sketch for driving Adafruit WS2801 pixels!
 uint8_t dataPin  = 2;    // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 3;    // Green wire on Adafruit Pixels
 
+// rotary_encoder
+const uint8_t re_pin_A = 4;
+const uint8_t re_pin_B = 5;
+
+unsigned long currentTime;
+unsigned long loopTime;
+unsigned char encoder_A;
+unsigned char encoder_B;
+unsigned char encoder_A_prev = 0;
+
 // Input buffer
 
 #define MAXBUF 10
@@ -62,6 +72,14 @@ void setup() {
   strip.show();
   Serial.begin(57600);
   inbuf_pos = 0;
+
+  // Setup the rotary encoder
+  pinMode(re_pin_A, INPUT);
+  pinMode(re_pin_B, INPUT);
+  currentTime = millis();
+  loopTime = currentTime;
+
+  
 }
 
 /* Helper functions */
@@ -142,6 +160,26 @@ void loop()
 //  Serial.println("PAUSE");
   delay(1000);
   */
+
+  // Deal with the rotary encoder
+  currentTime = millis();
+  // 5ms ~ 200Hz
+  if (currentTime >= (loopTime + 5)) {
+    encoder_A = digitalRead(re_pin_A);
+    encoder_B = digitalRead(re_pin_B);
+    if ((!encoder_A) && (encoder_A_prev)) {
+      if (encoder_B) {
+        // clockwise
+      } else {
+        // anticlockwise
+        // XXX Update something here.
+      }
+    }
+    encoder_A_prev = encoder_A;
+    loopTime = currentTime;
+  }
+
+  
   if (Serial.available())
   {
     char inch = Serial.read();
