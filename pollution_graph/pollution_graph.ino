@@ -5,21 +5,9 @@
  #include <avr/power.h>
 #endif
 
-/*****************************************************************************
-Example sketch for driving Adafruit WS2801 pixels!
-  Designed specifically to work with the Adafruit RGB Pixels!
-  12mm Bullet shape ----> https://www.adafruit.com/products/322
-  12mm Flat shape   ----> https://www.adafruit.com/products/738
-  36mm Square shape ----> https://www.adafruit.com/products/683
-  These pixels use SPI to transmit the color data, and have built in
-  high speed PWM drivers for 24 bit color per pixel
-  2 pins are required to interface
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-  Written by Limor Fried/Ladyada for Adafruit Industries. 
-  BSD license, all text above must be included in any redistribution
-*****************************************************************************/
+// LedControl for driving the displays
+// https://www.pjrc.com/teensy/td_libs_LedControl.html
+#include <LedControl.h>
 
 // Choose which 2 pins you will use for output.
 // Can be any valid output pins.
@@ -38,6 +26,10 @@ unsigned long loopTime;
 unsigned char encoder_A;
 unsigned char encoder_B;
 unsigned char encoder_A_prev = 0;
+
+// 7 Seg Display
+// LedControl(DIN_pin, CLK_pin, LOAD_pin, number_of_chips)
+LedControl mydisplay = LedControl(10, 11, 12 , 1);
 
 // Input buffer
 
@@ -79,6 +71,20 @@ void setup() {
   currentTime = millis();
   loopTime = currentTime;
 
+  // setup the 7 seg display
+
+  /*
+   The MAX72XX is in power-saving mode on startup,
+   we have to do a wakeup call
+   */
+  mydisplay.shutdown(0,false);
+  /* Set the brightness to a medium values */
+  mydisplay.setIntensity(0,8);
+  /* and clear the display */
+  mydisplay.clearDisplay(0);
+  // Show something
+  mydisplay.setDigit(0,3,3,false);
+  mydisplay.setDigit(0,4,4,false);
   
 }
 
