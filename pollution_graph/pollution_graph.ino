@@ -7,7 +7,11 @@
 
 // LedControl for driving the displays
 // https://www.pjrc.com/teensy/td_libs_LedControl.html
-#include <LedControl.h>
+// #include <LedControl.h>
+#include <SoftwareSerial.h>
+
+// Rx Tx
+SoftwareSerial serial7seg(7,10);
 
 // Choose which 2 pins you will use for output.
 // Can be any valid output pins.
@@ -29,7 +33,7 @@ unsigned char encoder_A_prev = 0;
 
 // 7 Seg Display
 // LedControl(DIN_pin, CLK_pin, LOAD_pin, number_of_chips)
-LedControl mydisplay = LedControl(10, 11, 12 , 1);
+// LedControl mydisplay = LedControl(10, 11, 12 , 1);
 
 // Input buffer
 
@@ -73,18 +77,24 @@ void setup() {
 
   // setup the 7 seg display
 
+  serial7seg.begin(9600);
+  serial7seg.write("v");
+
+  char tempString[10];
+  sprintf(tempString, "%4d", 1000);
+  serial7seg.print(tempString);
   /*
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
    */
-  mydisplay.shutdown(0,false);
+  //mydisplay.shutdown(0,false);
   /* Set the brightness to a medium values */
-  mydisplay.setIntensity(0,8);
+  //mydisplay.setIntensity(0,8);
   /* and clear the display */
-  mydisplay.clearDisplay(0);
+  //mydisplay.clearDisplay(0);
   // Show something
-  mydisplay.setDigit(0,3,3,false);
-  mydisplay.setDigit(0,4,4,false);
+  //mydisplay.setDigit(0,3,3,false);
+  //mydisplay.setDigit(0,4,4,false);
   
 }
 
