@@ -5,11 +5,8 @@
  #include <avr/power.h>
 #endif
 
-// LedControl for driving the displays
-// https://www.pjrc.com/teensy/td_libs_LedControl.html
-// #include <LedControl.h>
+// This is to drive the sparkfun 7 seg
 #include <SoftwareSerial.h>
-
 // Rx Tx
 SoftwareSerial serial7seg(7,10);
 
@@ -30,10 +27,6 @@ unsigned long loopTime;
 unsigned char encoder_A;
 unsigned char encoder_B;
 unsigned char encoder_A_prev = 0;
-
-// 7 Seg Display
-// LedControl(DIN_pin, CLK_pin, LOAD_pin, number_of_chips)
-// LedControl mydisplay = LedControl(10, 11, 12 , 1);
 
 // Input buffer
 
@@ -81,20 +74,8 @@ void setup() {
   serial7seg.write("v");
 
   char tempString[10];
-  sprintf(tempString, "%4d", 1000);
+  sprintf(tempString, "%4d", 8888);
   serial7seg.print(tempString);
-  /*
-   The MAX72XX is in power-saving mode on startup,
-   we have to do a wakeup call
-   */
-  //mydisplay.shutdown(0,false);
-  /* Set the brightness to a medium values */
-  //mydisplay.setIntensity(0,8);
-  /* and clear the display */
-  //mydisplay.clearDisplay(0);
-  // Show something
-  //mydisplay.setDigit(0,3,3,false);
-  //mydisplay.setDigit(0,4,4,false);
   
 }
 
@@ -186,10 +167,10 @@ void loop()
     if ((!encoder_A) && (encoder_A_prev)) {
       if (encoder_B) {
         // clockwise
-        Serial.write("clockwise\n\r");
+        Serial.println("Tclock");
       } else {
         // anticlockwise
-        Serial.write("anti-clockwise\n\r");
+        Serial.println("Tanticlock");
       }
     }
     encoder_A_prev = encoder_A;
