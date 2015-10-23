@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
 
+#logging.basicConfig(level=logging.DEBUG)
 
 def parse_date(rowdate, rowtime):
     add_day = False
@@ -60,7 +61,9 @@ def parse_headers(row, field_to_locations):
                     row_headers[this_location] = []
                 row_headers[this_location].append(item)
                 next(row_iter)
+        count += 1
     debug (row_headers)
+    print (row_headers)
     return row_headers
 
 
@@ -97,7 +100,7 @@ def extract_row_data(row, field_to_locations, headers):
         except StopIteration:
             # If we reach the end of the line
             break
-        this_gas = headers[this_location][inner_count]
+        this_gas = headers[this_location][inner_count % 2]
         inner_count += 1
         if len(item) == 0 or len(next_item) == 0:
             value = 0
@@ -107,6 +110,7 @@ def extract_row_data(row, field_to_locations, headers):
             value = float(item)
             status = next_item[0]
             units = next_item[2:]
+            count += 2
 
         row_data.append({
             'date': row_date,
