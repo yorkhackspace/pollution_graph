@@ -156,8 +156,13 @@ if __name__ == "__main__":
     print ( data[1] )
     print ( data[2] )
 
+    start_time = datetime.strptime("21/09/2015 00:00:00", "%d/%m/%Y %H:%M:%S")
+    end_time = datetime.strptime("22/09/2015 00:00:00", "%d/%m/%Y %H:%M:%S")
+
     location_data = [ x for x in data if x['location'] == 'York Bootham' ]
-    location_data_for_gas = [(x['date'], x['value']) for x in location_data if x['gas'] == 'NO2']
+    location_day = [x for x in location_data if ( x['date'] >= start_time and x['date'] < end_time ) ]
+    print(location_day)
+    location_data_for_gas = [(x['date'], x['value'] ) for x in location_day if x['gas'] == 'NO2']
 
     dates = [x[0] for x in location_data_for_gas]
     opens = [x[1] for x in location_data_for_gas]
