@@ -103,7 +103,8 @@ uint32_t Color(byte r, byte g, byte b)
 void showMeterPercent(byte percentage)
 {
   // Convert the input percentage into a number of LEDs to light.
-  int num_leds = percentage / strip.numPixels();
+  int num_leds = strip.numPixels() * percentage / 100;
+
   // Now scale that to a colour.   We want:
   // 0 = Green.     00 FF 00
   // 30% = Yellow   FF FF 00
