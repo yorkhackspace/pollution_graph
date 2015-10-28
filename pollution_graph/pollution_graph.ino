@@ -28,6 +28,14 @@ unsigned char encoder_A;
 unsigned char encoder_B;
 unsigned char encoder_A_prev = 0;
 
+// Time displayed on 7-seg, also the time we will display
+// data for.  hours * 100 + mins.
+int shownTime;
+#define MAX_TIME 2340
+#define MIN_TIME 500
+// Num mins to move for each rotary click
+#define TIME_INCREMENT 20
+
 // Input buffer
 
 #define MAXBUF 10
@@ -50,36 +58,52 @@ Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin);
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin, WS2801_GRB);
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, WS2801_GRB);
 
-void setup() {
-
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
-  clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
-#endif
-
-  strip.begin();
-  // Update LED contents, to start they are all 'off'
-  strip.show();
-  Serial.begin(57600);
-  inbuf_pos = 0;
-
-  // Setup the rotary encoder
-  pinMode(re_pin_A, INPUT);
-  pinMode(re_pin_B, INPUT);
-  currentTime = millis();
-  loopTime = currentTime;
-
-  // setup the 7 seg display
-
-  serial7seg.begin(9600);
-  serial7seg.write("v");
-
-  char tempString[10];
-  sprintf(tempString, "%4d", 8888);
-  serial7seg.print(tempString);
-  
-}
-
 /* Helper functions */
+
+// update the shownTime, taking care of
+// minutes to hours calculations.
+// param 'amount' is signed.  0 is accepted.
+void addToShownTime(int amount)
+{
+  // Don't do anything if we're about to go beyond an endstop.
+  if (((shownTime == MIN_TIME) && (amount < 0)) ||
+      ((shownTime == MAX_TIME) && (amount > 0)))
+  {
+    return;
+  }
+  
+  int hours = shownTime / 100;
+  int mins = shownTime % 100;
+  mins += amount;
+
+  while (mins > 59)
+  {
+    hours += 1;
+    mins -= 60;
+  }
+
+  while (mins < 0)
+  {
+    hours -= 1;
+    mins += 60;
+  }
+
+  // hard stop for max/min limits to time
+  shownTime = hours * 100 + mins;
+  if (shownTime < MIN_TIME)
+  {
+    shownTime = MIN_TIME;
+  }
+  else if (shownTime > MAX_TIME)
+  {
+    shownTime = MAX_TIME;
+  }
+
+  // Also update 7-seg
+  char tempString[10];
+  sprintf(tempString, "%04d", shownTime);
+  serial7seg.print(tempString);
+}
 
 // Create a 24 bit color value from R,G,B
 uint32_t Color(byte r, byte g, byte b)
@@ -142,6 +166,34 @@ void showMeterPercent(byte percentage)
   analogWrite(11, b);
 }
 
+void setup() {
+
+#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
+  clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
+#endif
+
+  strip.begin();
+  // Update LED contents, to start they are all 'off'
+  strip.show();
+  Serial.begin(57600);
+  inbuf_pos = 0;
+
+  // Setup the rotary encoder
+  pinMode(re_pin_A, INPUT);
+  pinMode(re_pin_B, INPUT);
+  currentTime = millis();
+  loopTime = currentTime;
+
+  // setup the 7 seg display
+
+  serial7seg.begin(9600);
+  serial7seg.write("v");
+
+  // Init to mid-day
+  shownTime = 1200;
+  addToShownTime(0);
+}
+
 void loop()
 {
   // Ramp the meter from 0 to 100%
@@ -169,9 +221,11 @@ void loop()
       if (encoder_B) {
         // clockwise
         Serial.println("Tclock");
+        addToShownTime(-TIME_INCREMENT);
       } else {
         // anticlockwise
         Serial.println("Tanticlock");
+        addToShownTime(TIME_INCREMENT);
       }
     }
     encoder_A_prev = encoder_A;
