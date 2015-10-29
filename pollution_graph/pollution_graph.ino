@@ -36,8 +36,19 @@ int shownTime;
 // Num mins to move for each rotary click
 #define TIME_INCREMENT 20
 
-// Input buffer
+// Type of data source to read from.  Presumably options are serial link, and SD card.
+// Set to 1 to enable.
+#define DATA_SOURCE_SERIAL  0
+#define DATA_SOURCE_FAKE    1
+#define DATA_SOURCE_SD      0
 
+#define TRUE 1
+#define FALSE 0
+
+// which reed switch is active?
+byte reed;
+
+// Input buffer
 #define MAXBUF 10
 char inbuf[MAXBUF];
 byte inbuf_pos;
@@ -59,6 +70,13 @@ Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin);
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, WS2801_GRB);
 
 /* Helper functions */
+
+// Read the reed switches, return a number indicating which location is activated 
+// (or 0 if none).
+byte getCurrentReed()
+{
+  return 1;
+}
 
 // update the shownTime, taking care of
 // minutes to hours calculations.
@@ -100,9 +118,14 @@ void addToShownTime(int amount)
   }
 
   // Also update 7-seg
-  char tempString[10];
+  char tempString[5];
+  serial7seg.write('y'); // Move cursor
+  serial7seg.write((byte)0);   // to position 0
   sprintf(tempString, "%04d", shownTime);
+  tempString[4] = 0;
   serial7seg.print(tempString);
+  Serial.println(tempString);
+//  delay(200);
 }
 
 // Create a 24 bit color value from R,G,B
@@ -126,6 +149,15 @@ uint32_t Color(byte r, byte g, byte b)
 // How to demo that without the strip?  Guess we just debug with the test app and plug and pray.
 void showMeterPercent(byte percentage)
 {
+  if (percentage > 100)
+  {
+    percentage = 100;
+  }
+  else if (percentage < 0)
+  {
+    percentage = 0;
+  }
+  
   // Convert the input percentage into a number of LEDs to light.
   int num_leds = strip.numPixels() * percentage / 100;
 
@@ -187,52 +219,36 @@ void setup() {
   // setup the 7 seg display
 
   serial7seg.begin(9600);
-  serial7seg.write("v");
+  serial7seg.write("v");  // CLEAR
 
   // Init to mid-day
   shownTime = 1200;
   addToShownTime(0);
 }
 
-void loop()
+#if DATA_SOURCE_FAKE
+int percentage;
+#endif
+
+void requestNewData(byte reed, int shown_time)
 {
-  // Ramp the meter from 0 to 100%
-//  Serial.println("BEGIN");
-/*  for (int ii = 0; ii <= 100; ii += 4)
-  {
-    showMeterPercent(ii);
-    Serial.println(ii);
-    delay(200);
-  }
-  analogWrite(6, 0);
-  analogWrite(10, 0);
-  analogWrite(11, 0);
-//  Serial.println("PAUSE");
-  delay(1000);
-  */
+#if DATA_SOURCE_SERIAL
+  TODO.
+#endif
+#if DATA_SOURCE_FAKE
+  percentage = reed * 4 * (shown_time / 100);  
+  Serial.print("%:");
+  Serial.println(percentage);
+#endif   
+}
 
-  // Deal with the rotary encoder
-  currentTime = millis();
-  // 5ms ~ 200Hz
-  if (currentTime >= (loopTime + 5)) {
-    encoder_A = digitalRead(re_pin_A);
-    encoder_B = digitalRead(re_pin_B);
-    if ((!encoder_A) && (encoder_A_prev)) {
-      if (encoder_B) {
-        // clockwise
-        Serial.println("Tclock");
-        addToShownTime(-TIME_INCREMENT);
-      } else {
-        // anticlockwise
-        Serial.println("Tanticlock");
-        addToShownTime(TIME_INCREMENT);
-      }
-    }
-    encoder_A_prev = encoder_A;
-    loopTime = currentTime;
-  }
-
-  
+// Check whether the data source has sent us an update.  If so, then display the new data.
+void checkForNewData()
+{
+#if DATA_SOURCE_FAKE
+  showMeterPercent(percentage);  
+#endif
+#if DATA_SOURCE_SERIAL
   if (Serial.available())
   {
     char inch = Serial.read();
@@ -284,6 +300,63 @@ void loop()
         }
       }
     }
+  }  
+#endif
+}
+
+void loop()
+{
+  byte inputChanged = FALSE;
+  
+  // Ramp the meter from 0 to 100%
+//  Serial.println("BEGIN");
+/*  for (int ii = 0; ii <= 100; ii += 4)
+  {
+    showMeterPercent(ii);
+    Serial.println(ii);
+    delay(200);
   }
+  analogWrite(6, 0);
+  analogWrite(10, 0);
+  analogWrite(11, 0);
+//  Serial.println("PAUSE");
+  delay(1000);
+  */
+
+  // Deal with the rotary encoder
+  currentTime = millis();
+  // 5ms ~ 200Hz
+  if (currentTime >= (loopTime + 5)) {
+    encoder_A = digitalRead(re_pin_A);
+    encoder_B = digitalRead(re_pin_B);
+    if ((!encoder_A) && (encoder_A_prev)) {
+      if (encoder_B) {
+        // clockwise
+//        Serial.println("Tclock");
+        addToShownTime(-TIME_INCREMENT);
+        inputChanged = TRUE;
+      } else {
+        // anticlockwise
+//        Serial.println("Tanticlock");
+        addToShownTime(TIME_INCREMENT);
+        inputChanged = TRUE;
+      }
+    }
+    encoder_A_prev = encoder_A;
+    loopTime = currentTime;
+  }
+
+  // Check reeds
+  byte oldReed = reed;
+  reed = getCurrentReed();
+  inputChanged |= (reed != oldReed);
+
+  // This request/check pattern allows for async data feeds.
+  if (inputChanged)
+  {
+    requestNewData(reed, shownTime);
+  }
+ 
+  checkForNewData();
 }
 
