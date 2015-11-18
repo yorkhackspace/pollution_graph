@@ -15,12 +15,12 @@ SoftwareSerial serial7seg(7,10);
 // The colors of the wires may be totally different so
 // BE SURE TO CHECK YOUR PIXELS TO SEE WHICH WIRES TO USE!
 
-uint8_t dataPin  = 2;    // Yellow wire on Adafruit Pixels
-uint8_t clockPin = 3;    // Green wire on Adafruit Pixels
+uint8_t dataPin  = 12;    // Yellow wire on Adafruit Pixels
+uint8_t clockPin = 13;    // Green wire on Adafruit Pixels
 
 // rotary_encoder
-const uint8_t re_pin_A = 4;
-const uint8_t re_pin_B = 5;
+const uint8_t re_pin_A = 10;
+const uint8_t re_pin_B = 11;
 
 unsigned long currentTime;
 unsigned long loopTime;
@@ -41,6 +41,10 @@ int shownTime;
 #define DATA_SOURCE_SERIAL  0
 #define DATA_SOURCE_FAKE    1
 #define DATA_SOURCE_SD      0
+
+// Ditto flavours of 7-segment display
+#define SEVENSEG_SERIAL   0
+#define SEVENSEG_I2C      1
 
 #define TRUE 1
 #define FALSE 0
@@ -119,11 +123,15 @@ void addToShownTime(int amount)
 
   // Also update 7-seg
   char tempString[5];
+#if SEVENSEG_SERIAL
   serial7seg.write('y'); // Move cursor
   serial7seg.write((byte)0);   // to position 0
+#endif
   sprintf(tempString, "%04d", shownTime);
   tempString[4] = 0;
+#if SEVENSEG_SERIAL
   serial7seg.print(tempString);
+#endif
   Serial.println(tempString);
 //  delay(200);
 }
@@ -193,9 +201,11 @@ void showMeterPercent(byte percentage)
   }
   strip.show();
   // debug : set pwm RGB LED.  R = 6, G = 10, B = 11
+  /*
   analogWrite(6, r);
   analogWrite(10, g);
   analogWrite(11, b);
+  */
 }
 
 void setup() {
@@ -217,9 +227,10 @@ void setup() {
   loopTime = currentTime;
 
   // setup the 7 seg display
-
+#if SEVENSEG_SERIAL
   serial7seg.begin(9600);
   serial7seg.write("v");  // CLEAR
+#endif
 
   // Init to mid-day
   shownTime = 1200;
@@ -307,19 +318,22 @@ void checkForNewData()
 void loop()
 {
   byte inputChanged = FALSE;
-  
+
+  /*
   // Ramp the meter from 0 to 100%
-//  Serial.println("BEGIN");
-/*  for (int ii = 0; ii <= 100; ii += 4)
+  Serial.println("BEGIN");
+  for (int ii = 0; ii <= 100; ii += 4)
   {
     showMeterPercent(ii);
     Serial.println(ii);
     delay(200);
   }
+  
   analogWrite(6, 0);
   analogWrite(10, 0);
   analogWrite(11, 0);
-//  Serial.println("PAUSE");
+  
+  Serial.println("PAUSE");
   delay(1000);
   */
 
@@ -332,12 +346,12 @@ void loop()
     if ((!encoder_A) && (encoder_A_prev)) {
       if (encoder_B) {
         // clockwise
-//        Serial.println("Tclock");
+        Serial.println("Tc");
         addToShownTime(-TIME_INCREMENT);
         inputChanged = TRUE;
       } else {
         // anticlockwise
-//        Serial.println("Tanticlock");
+        Serial.println("Ta");
         addToShownTime(TIME_INCREMENT);
         inputChanged = TRUE;
       }
