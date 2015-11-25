@@ -1,14 +1,18 @@
 #include "Adafruit_WS2801.h"
 #include "SPI.h" // Comment out this line if using Trinket or Gemma
+// For the Adafruit LCD.
+#include <Wire.h>
+#include "Adafruit_LEDBackpack.h"
+#include "Adafruit_GFX.h"
 
 #ifdef __AVR_ATtiny85__
  #include <avr/power.h>
 #endif
 
 // This is to drive the sparkfun 7 seg
-#include <SoftwareSerial.h>
+// #include <SoftwareSerial.h>
 // Rx Tx
-SoftwareSerial serial7seg(7,10);
+//SoftwareSerial serial7seg(7,10);
 
 // Choose which 2 pins you will use for output.
 // Can be any valid output pins.
@@ -43,8 +47,8 @@ int shownTime;
 #define DATA_SOURCE_SD      0
 
 // Ditto flavours of 7-segment display
-#define SEVENSEG_SERIAL   0
-#define SEVENSEG_I2C      1
+// #define SEVENSEG_SERIAL   0
+// #define SEVENSEG_I2C      1
 
 #define TRUE 1
 #define FALSE 0
@@ -75,6 +79,15 @@ Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin);
 // the library will handle the format change.  Examples:
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin, WS2801_GRB);
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, WS2801_GRB);
+
+// I2C address of the display.  Stick with the default address of 0x70
+// unless you've changed the address jumpers on the back of the display.
+#define DISPLAY_ADDRESS   0x70
+
+
+// Create display and DS1307 objects.  These are global variables that
+// can be accessed from both the setup and loop function below.
+Adafruit_7segment clockDisplay = Adafruit_7segment();
 
 /* Helper functions */
 
@@ -140,6 +153,9 @@ void addToShownTime(int amount)
 #if SEVENSEG_SERIAL
   serial7seg.print(tempString);
 #endif
+  // Now print the time value to the display.
+  clockDisplay.print(shownTime, DEC);
+  clockDisplay.writeDisplay();
   Serial.println(tempString);
 //  delay(200);
 }
@@ -239,6 +255,10 @@ void setup() {
   serial7seg.begin(9600);
   serial7seg.write("v");  // CLEAR
 #endif
+  // Setup the display.
+  clockDisplay.begin(DISPLAY_ADDRESS);
+  clockDisplay.print(1200, DEC);
+  clockDisplay.writeDisplay();
 
   // Init to mid-day
   shownTime = 1200;
