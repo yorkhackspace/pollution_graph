@@ -95,7 +95,7 @@ Adafruit_7segment clockDisplay = Adafruit_7segment();
 // (or 255 if none).
 byte getCurrentReed()
 {
-  for (int l = first_reed ; l < last_reed ; l++ ) {
+  for (int l = first_reed ; l <= last_reed ; l++ ) {
     if (!digitalRead(l)) {
         return l;
     }
@@ -264,7 +264,7 @@ void setup() {
   shownTime = 1200;
   addToShownTime(0);
 
-  for (int l = first_reed ; l < last_reed; l += 1 ) {
+  for (int l = first_reed ; l <= last_reed; l += 1 ) {
     pinMode(l, INPUT);
     digitalWrite(l, HIGH);
   }
