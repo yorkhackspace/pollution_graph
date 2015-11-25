@@ -50,7 +50,10 @@ int shownTime;
 #define FALSE 0
 
 // which reed switch is active?
-byte reed;
+byte reed = 0;
+
+const byte first_reed = 0;
+const byte last_reed = 8;
 
 // Input buffer
 #define MAXBUF 10
@@ -76,10 +79,15 @@ Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin);
 /* Helper functions */
 
 // Read the reed switches, return a number indicating which location is activated 
-// (or 0 if none).
+// (or 255 if none).
 byte getCurrentReed()
 {
-  return 1;
+  for (int l = first_reed ; l < last_reed ; l++ ) {
+    if (!digitalRead(l)) {
+        return l;
+    }
+  }
+  return 255;
 }
 
 // update the shownTime, taking care of
@@ -235,6 +243,11 @@ void setup() {
   // Init to mid-day
   shownTime = 1200;
   addToShownTime(0);
+
+  for (int l = first_reed ; l < last_reed; l += 1 ) {
+    pinMode(l, INPUT);
+    digitalWrite(l, HIGH);
+  }
 }
 
 #if DATA_SOURCE_FAKE
@@ -248,7 +261,10 @@ void requestNewData(byte reed, int shown_time)
 #endif
 #if DATA_SOURCE_FAKE
   percentage = reed * 4 * (shown_time / 100);  
+  percentage = reed * 4;
   Serial.print("%:");
+  Serial.print(shown_time);
+  Serial.print(":");
   Serial.println(percentage);
 #endif   
 }
@@ -363,12 +379,17 @@ void loop()
   // Check reeds
   byte oldReed = reed;
   reed = getCurrentReed();
+  if ( reed == 255 ) {
+    reed = oldReed;
+  }
   inputChanged |= (reed != oldReed);
 
   // This request/check pattern allows for async data feeds.
-  if (inputChanged)
+  if (inputChanged )
   {
     requestNewData(reed, shownTime);
+    Serial.print("Reed: ");
+    Serial.println(reed);
   }
  
   checkForNewData();
