@@ -9,11 +9,6 @@
  #include <avr/power.h>
 #endif
 
-// This is to drive the sparkfun 7 seg
-// #include <SoftwareSerial.h>
-// Rx Tx
-//SoftwareSerial serial7seg(7,10);
-
 // Choose which 2 pins you will use for output.
 // Can be any valid output pins.
 // The colors of the wires may be totally different so
@@ -32,32 +27,55 @@ unsigned char encoder_A;
 unsigned char encoder_B;
 unsigned char encoder_A_prev = 0;
 
+#include "data.h"
 // Time displayed on 7-seg, also the time we will display
 // data for.  hours * 100 + mins.
 int shownTime;
-#define MAX_TIME 2340
+#define MAX_TIME 2300
 #define MIN_TIME 500
 // Num mins to move for each rotary click
-#define TIME_INCREMENT 20
+#define TIME_INCREMENT 60
 
 // Type of data source to read from.  Presumably options are serial link, and SD card.
 // Set to 1 to enable.
 #define DATA_SOURCE_SERIAL  0
-#define DATA_SOURCE_FAKE    1
-#define DATA_SOURCE_SD      0
+#define DATA_SOURCE_FAKE    0
+#define DATA_SOURCE_MEM     1
 
 // Ditto flavours of 7-segment display
-// #define SEVENSEG_SERIAL   0
-// #define SEVENSEG_I2C      1
+#define SEVENSEG_SERIAL   0
+#define SEVENSEG_I2C      1
+
+#if SEVENSEG_SERIAL
+// This is to drive the sparkfun 7 seg
+#include <SoftwareSerial.h>
+// Rx Tx
+SoftwareSerial serial7seg(7,10);
+#endif
+
+
+#if SEVENSEG_I2C
+// I2C address of the display.  Stick with the default address of 0x70
+// unless you've changed the address jumpers on the back of the display.
+#define DISPLAY_ADDRESS   0x70
+
+// Create display and DS1307 objects.  These are global variables that
+// can be accessed from both the setup and loop function below.
+Adafruit_7segment clockDisplay = Adafruit_7segment();
+#endif
+
+
 
 #define TRUE 1
 #define FALSE 0
 
-// which reed switch is active?
-byte reed = 0;
-
 const byte first_reed = 0;
-const byte last_reed = 8;
+const byte last_reed = 6;
+
+// which reed switch is active?
+#define NO_REEDS 255
+byte reed = NO_REEDS;
+
 
 // Input buffer
 #define MAXBUF 10
@@ -80,15 +98,6 @@ Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin);
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, dataPin, clockPin, WS2801_GRB);
 //Adafruit_WS2801 strip = Adafruit_WS2801(25, WS2801_GRB);
 
-// I2C address of the display.  Stick with the default address of 0x70
-// unless you've changed the address jumpers on the back of the display.
-#define DISPLAY_ADDRESS   0x70
-
-
-// Create display and DS1307 objects.  These are global variables that
-// can be accessed from both the setup and loop function below.
-Adafruit_7segment clockDisplay = Adafruit_7segment();
-
 /* Helper functions */
 
 // Read the reed switches, return a number indicating which location is activated 
@@ -100,7 +109,7 @@ byte getCurrentReed()
         return l;
     }
   }
-  return 255;
+  return NO_REEDS;
 }
 
 // update the shownTime, taking care of
@@ -143,20 +152,23 @@ void addToShownTime(int amount)
   }
 
   // Also update 7-seg
-  char tempString[5];
 #if SEVENSEG_SERIAL
+  char tempString[5];
   serial7seg.write('y'); // Move cursor
   serial7seg.write((byte)0);   // to position 0
-#endif
   sprintf(tempString, "%04d", shownTime);
   tempString[4] = 0;
-#if SEVENSEG_SERIAL
   serial7seg.print(tempString);
+  Serial.println(tempString);
 #endif
+#if SEVENSEG_I2C
   // Now print the time value to the display.
   clockDisplay.print(shownTime, DEC);
+  clockDisplay.writeDigitRaw(2, 0x02);  // turn on the central colon.
+  clockDisplay.drawColon(true);
   clockDisplay.writeDisplay();
-  Serial.println(tempString);
+#endif
+
 //  delay(200);
 }
 
@@ -255,12 +267,16 @@ void setup() {
   serial7seg.begin(9600);
   serial7seg.write("v");  // CLEAR
 #endif
+#if SEVENSEG_I2C
   // Setup the display.
   clockDisplay.begin(DISPLAY_ADDRESS);
-  clockDisplay.print(1200, DEC);
+  clockDisplay.writeDigitRaw(2, 0x02);  // turn on the central colon.
+  clockDisplay.drawColon(true);
   clockDisplay.writeDisplay();
+#endif
 
-  // Init to mid-day
+  // Init to mid-day.  addToShownTime has an implicit write
+  // to the display.
   shownTime = 1200;
   addToShownTime(0);
 
@@ -270,7 +286,7 @@ void setup() {
   }
 }
 
-#if DATA_SOURCE_FAKE
+#if DATA_SOURCE_FAKE || DATA_SOURCE_MEM
 int percentage;
 #endif
 
@@ -287,12 +303,22 @@ void requestNewData(byte reed, int shown_time)
   Serial.print(":");
   Serial.println(percentage);
 #endif   
+#if DATA_SOURCE_MEM
+  if (reed == NO_REEDS)
+  {
+    percentage = 0;
+  }
+  else
+  {
+    percentage = dataPoints[reed][(shown_time / 100) - 5];
+  }
+#endif
 }
 
 // Check whether the data source has sent us an update.  If so, then display the new data.
 void checkForNewData()
 {
-#if DATA_SOURCE_FAKE
+#if DATA_SOURCE_FAKE || DATA_SOURCE_MEM
   showMeterPercent(percentage);  
 #endif
 #if DATA_SOURCE_SERIAL
@@ -399,7 +425,7 @@ void loop()
   // Check reeds
   byte oldReed = reed;
   reed = getCurrentReed();
-  if ( reed == 255 ) {
+  if ( reed == NO_REEDS ) {
     reed = oldReed;
   }
   inputChanged |= (reed != oldReed);
