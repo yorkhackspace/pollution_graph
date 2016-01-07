@@ -70,7 +70,7 @@ Adafruit_7segment clockDisplay = Adafruit_7segment();
 #define FALSE 0
 
 const byte first_reed = 0;
-const byte last_reed = 6;
+const byte last_reed = 9;
 
 // which reed switch is active?
 #define NO_REEDS 255
@@ -201,6 +201,8 @@ void showMeterPercent(byte percentage)
   {
     percentage = 0;
   }
+
+//  Serial.println(percentage, DEC);
   
   // Convert the input percentage into a number of LEDs to light.
   int num_leds = strip.numPixels() * percentage / 100;

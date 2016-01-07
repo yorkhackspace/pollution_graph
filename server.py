@@ -7,13 +7,14 @@
 # Should really be checking the header columns for each site, too.
 
 import csv
-import serial
+#import serial
 import sys
 
 site_columns = {}
 site_names = []
 site_data = {}
 max_val = 0
+max_ts = None
 
 with open("input.csv", "rb") as infile:
     reader = csv.reader(infile)
@@ -44,10 +45,13 @@ with open("input.csv", "rb") as infile:
                 site_data[sitename][timestamp] = value
                 if value > max_val:
                     max_val = value
+                    max_ts = timestamp
 
 # To test, let's check the data for some sample points
 
+print("Max val:", max_val)
 print("Bootham 2 sep 09:00:", site_data["York Bootham"]["02/09/2015_09:00:00"])
+print("Bootham 8 sep 09:00:", site_data["York Bootham"]["08/09/2015_09:00:00"])
 print("Nunnery 5 sep 13:00:", site_data["York Nunnery Lane"]["05/09/2015_13:00:00"])
 
 # current max value
@@ -58,11 +62,67 @@ print("Holgate 8 sep 11:00:", site_data["York Holgate"]["08/09/2015_11:00:00"])
 
 # max value seen, to get a percentage figure of the max.
 
-ser = serial.Serial('/dev/ttyACM0', 57600)
+#ser = serial.Serial('/dev/ttyACM0', 57600)
+
+
+# Let's make a dummy data file.
+print """
+// Data structure for the input data.
+// We store as an array of locations, each with data from hour 05:00 to hour 23:00.
+// Each is a percentage of the global maximum in the dataset as a whole.
+byte dataPoints[][19] = 
+{
+"""
+
+# XXX determine the best date, preferably
+chosen_date = "08/09/2015"
+
+# print site_data.keys()
+
+sites = (
+    'DUMMY',
+    'DUMMY',
+    'York Heworth Green', # 2
+    'DUMMY', # Fishergate marker, but no data
+    'York Nunnery Lane', # 4
+    'York Lawrence Street', #5
+    'York Holgate',  # 6
+    'York Gillygate', # 7 : but data is all zeros
+    'York Bootham', #8
+
+)
+
+for site in sites:
+    print "  {\n  // " + site + "\n"
+
+    vals = []
+    if site == 'DUMMY':
+        for hr in range(5,24):
+            vals.append("0")
+    else:
+        sd = site_data[site]
+        # print repr(sd)
+        for hr in range(5,24):
+            ts = chosen_date + ("_%02d:00:00" % hr)
+            # print ts
+            data = sd[ts]
+            # print repr(data)
+            perc = int(data * 100 / max_val)
+            vals.append(str(perc))
+        
+    print ", ".join(vals)
+
+    print "  },\n"
+
+print """
+};
+"""
+
+exit(0)
 
 while 1:
     # line = ser.readline()
-    line = sys.stdin.readline()
+#    line = sys.stdin.readline()
     # Expect request lines in the format: 'R 1,05,13'
     # to read site 1, 5th of month, 13:00
     if line[0] == 'R':
@@ -78,7 +138,7 @@ while 1:
             print("data: %r" % data)
             percent = int((data / max_val) * 100)
             print("normalised against %.3f = %d" % (max_val, percent))
-            ser.write('! %03d\x0a' % percent)
+#            ser.write('! %03d\x0a' % percent)
 #            print('! %03d\x0a' % percent)
         except Exception as e:
             print("Exception:%r - ignored.", e)
